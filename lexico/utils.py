@@ -3,13 +3,10 @@ from dateutil.parser import parse
 import os
 import json
 import sqlite3
-
 import arrow
 from wordnik import *
 from tabulate import tabulate
-
-from .errors import ConfigFileError
-
+from .errors import ConfigFileError  
 API_URL = 'http://api.wordnik.com/v4'
 
 def create_word_api(API_KEY):
@@ -176,7 +173,8 @@ def update_meta(word):
         update_statement = '''UPDATE Words SET lookup=(?), last_lookup_at=(?) WHERE word=(?)'''
 
         cursor.execute(meta_query, [word])
-        lookup_count, *dummy = cursor.fetchone()
+        lookup_count1= cursor.fetchone()
+        lookup_count=lookup_count1[0]
 
         now = arrow.utcnow().isoformat()
         cursor.execute(update_statement, [lookup_count+1, now, word])
@@ -218,7 +216,8 @@ def lookup_word(word):
         cursor = connection.cursor()
         search_word_query = '''SELECT COUNT(*) FROM Words WHERE word = (?)'''
         cursor.execute(search_word_query, [word])
-        count, *dummy = cursor.fetchone()
+        count1 = cursor.fetchone()
+        count=count1[0]
         return bool(count)
 
 def save_word(word_object):
@@ -231,8 +230,8 @@ def save_word(word_object):
         cursor.execute(insert_word_meta, [word_object.word, 1, now, now])
 
         cursor.execute('SELECT id FROM Words WHERE word=(?)', [word_object.word])
-        word_id, *dummy = cursor.fetchone()
-
+        word_id1= cursor.fetchone()
+        word_id=word_id1[0]
         insert_word_data = '''INSERT INTO Vocabulary (type, text, word_id)
                               VALUES (?, ?, {})'''.format(word_id)
 
@@ -262,7 +261,7 @@ def save_word(word_object):
 ###############################################################################
 
 def get_words():
-    search_word_query = '''SELECT word, lookup, created_at, last_lookup_at FROM Words'''
+    search_word_query = '''SELECT id, word, lookup, created_at, last_lookup_at FROM Words'''
 
     with sqlite3.connect(DB_FILE) as connection:
         cursor = connection.cursor()
@@ -272,10 +271,29 @@ def get_words():
     return words
 
 def format_words(words):
-    return [(word, lookup, arrow.get(created_at).humanize(), arrow.get(last_lookup_at).humanize())
-            for word, lookup, created_at, last_lookup_at in words]
+    return [(id1, word, lookup, arrow.get(created_at).humanize(), arrow.get(last_lookup_at).humanize(), extra)
+            for id1, word, lookup, created_at, last_lookup_at, extra in words]
         
-def tabulate_words(formatted_data):
+def tabulate_words(formatted_data,extra):
     '''Tabulates the given words for user viewing.'''
-    headers = ['Word', 'Lookups', 'Created At', 'Last Lookup']
+    
+    headers = ['Serial no','Word', 'Lookups', 'Created At', 'Last Lookup']
+    headers.append(extra)
     return tabulate(formatted_data, headers=headers)
+
+###############################################################################
+################################## TRANSLATE ##################################
+###############################################################################
+
+def fetch_translations(word_to_translate):
+    languages_to_use = ["de","es","fr","hi","ru"]
+    translator = Translator()
+    word_translations = []
+    for language in languages_to_use:
+        word_in_this_language = translator.translate(word_to_translate, dest=language)
+        word_with_language_info = word_in_this_language.text + " (" + language + ")"
+        word_translations.append(word_with_language_info)
+    return word_translations
+
+        
+

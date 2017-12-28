@@ -1,10 +1,16 @@
+import os
 import sys
 import click
-
+import sqlite3
 from .errors import ConfigFileError
 from .utils import fetch_word, save_api_key, load_api_key, save_word, get_words, check_initialization, tabulate_words, initialize_db, initialize_application, has_api_key, has_db, format_words
 
-
+HOME_DIR = os.path.expanduser('~') # User's Home Directory
+# Base Directory to store all data related to the application.
+BASE_DIR = os.path.join(HOME_DIR, '.lexico')
+CONFIG_FILE = os.path.join(BASE_DIR, 'config.json')
+WORDS_FILE = os.path.join(BASE_DIR, 'words.json')
+DB_FILE = os.path.join(BASE_DIR, 'vocabulary.db')
 @click.group()
 def lexico():
     '''Your personal glossarist to help you expand your English vocabulary.'''
@@ -73,11 +79,24 @@ def init():
 
 
 @lexico.command()
-def view():
+@click.option('--extra', default='meaning',help='Displays an additional column with information of your choice')
+def view(extra):
     '''Lists all the words present in your dictionary.'''
     #TODO: Option for file output
     #TODO: More information/table columns
     words = get_words()
-    formatted_words = format_words(words)
-    display_words = tabulate_words(formatted_words)
+    words1=[]
+    for x in words:
+     x=list(x)
+     id1=int(x[0])
+     selectq="SELECT text FROM Vocabulary WHERE word_id =(?) AND type=(?)"
+     with sqlite3.connect(DB_FILE) as connection:
+      cursor = connection.cursor()
+      cursor.execute(selectq,[id1,extra])
+      info=cursor.fetchone()
+     x.append(info)
+     x=tuple(x)
+     words1.append(x)
+    formatted_words = format_words(words1)
+    display_words = tabulate_words(formatted_words,extra)
     click.echo_via_pager(display_words)

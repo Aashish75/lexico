@@ -2,7 +2,7 @@
 
 ![lexical things](static/logo.png?raw=true)
 
-The Command Line Tool to help expand your English vocabulary and familiarize you with those elusive words.
+The Command Line Tools to help expand your English vocabulary and familiarize you with those elusive words.
 
 ## What is `lexico`?
 

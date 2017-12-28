@@ -1,8 +1,6 @@
 import json
-
 import click
 from wordnik import *
-
 from .utils import create_word_api, load_api_key
 
 class Word(object):
