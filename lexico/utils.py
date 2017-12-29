@@ -94,7 +94,7 @@ def initialize_db():
         #   - 'Example'
         #   - 'Phrase'
         #   - 'Pronunciation'
-        #   - 'Translation
+        #   - 'Translation'
         #   - 'Hyphenation'
 
         create_vocabulary_table = '''CREATE TABLE Vocabulary (
