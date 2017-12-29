@@ -1,5 +1,6 @@
 import os
 import sys
+
 import click
 import sqlite3
 from .errors import ConfigFileError
@@ -11,6 +12,7 @@ BASE_DIR = os.path.join(HOME_DIR, '.lexico')
 CONFIG_FILE = os.path.join(BASE_DIR, 'config.json')
 WORDS_FILE = os.path.join(BASE_DIR, 'words.json')
 DB_FILE = os.path.join(BASE_DIR, 'vocabulary.db')
+
 @click.group()
 def lexico():
     '''Your personal glossarist to help you expand your English vocabulary.'''
@@ -94,9 +96,9 @@ def view(extra):
       cursor = connection.cursor()
       cursor.execute(selectq,[id1,extra])
       info=cursor.fetchone()
-     x.append(info)
-     x=tuple(x)
-     words1.append(x)
+      x.append(info)
+      x=tuple(x)
+      words1.append(x)
     formatted_words = format_words(words1)
     display_words = tabulate_words(formatted_words,extra)
     click.echo_via_pager(display_words)

@@ -3,10 +3,14 @@ from dateutil.parser import parse
 import os
 import json
 import sqlite3
+
 import arrow
 from wordnik import *
 from tabulate import tabulate
+from googletrans import Translator
+
 from .errors import ConfigFileError  
+
 API_URL = 'http://api.wordnik.com/v4'
 
 def create_word_api(API_KEY):
@@ -90,6 +94,7 @@ def initialize_db():
         #   - 'Example'
         #   - 'Phrase'
         #   - 'Pronunciation'
+        #   - 'Translation
         #   - 'Hyphenation'
 
         create_vocabulary_table = '''CREATE TABLE Vocabulary (
@@ -173,8 +178,7 @@ def update_meta(word):
         update_statement = '''UPDATE Words SET lookup=(?), last_lookup_at=(?) WHERE word=(?)'''
 
         cursor.execute(meta_query, [word])
-        lookup_count1= cursor.fetchone()
-        lookup_count=lookup_count1[0]
+        lookup_count, *dummy= cursor.fetchone()
 
         now = arrow.utcnow().isoformat()
         cursor.execute(update_statement, [lookup_count+1, now, word])
@@ -203,6 +207,8 @@ def get_word(word):
                 word_data['_phrases'].append(data)
             elif data_type == 'text_pronunciation':
                 word_data['_text_pronunciations'].append(data)
+            elif data_type == 'translation':
+                word_data['_translations'].append(data)
             elif data_type == 'hyphenation':
                 word_data['_hyphenation'] = data
             else:
@@ -216,8 +222,7 @@ def lookup_word(word):
         cursor = connection.cursor()
         search_word_query = '''SELECT COUNT(*) FROM Words WHERE word = (?)'''
         cursor.execute(search_word_query, [word])
-        count1 = cursor.fetchone()
-        count=count1[0]
+        count,*dummy = cursor.fetchone()
         return bool(count)
 
 def save_word(word_object):
@@ -253,6 +258,9 @@ def save_word(word_object):
 
         for phrase in word_object.phrases:
             cursor.execute(insert_word_data, ['phrase', phrase])
+        
+        for translation in word_object.translations:
+            cursor.execute(insert_word_data, ['translation', translation])
 
         cursor.execute(insert_word_data, ['hyphenation', word_object.hyphenation])
 
@@ -276,7 +284,6 @@ def format_words(words):
         
 def tabulate_words(formatted_data,extra):
     '''Tabulates the given words for user viewing.'''
-    
     headers = ['Serial no','Word', 'Lookups', 'Created At', 'Last Lookup']
     headers.append(extra)
     return tabulate(formatted_data, headers=headers)
